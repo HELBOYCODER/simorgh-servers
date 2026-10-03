@@ -1,0 +1,146 @@
+name: fresh
+
+# Every ten minutes: read every post the channels listed under `priority`
+# in deploy/crowd/telegram-channels.json made since the last run
+# (fresh-state.json on the crowd-data branch remembers the last post read),
+# test their configs the way the harvest does along with the ones already
+# at the top, and put the ones that work at the top of verified.txt on the
+# crowd-data branch. They are also kept in fresh.txt there, so the next run
+# can drop the ones that stopped working and the two-hourly harvest can keep
+# them at the top of the list it writes.
+#
+# Testing runs outside the crowd-data lock; only the short publish job
+# waits for the harvest and crowd workflows.
+#
+# Derived from the `fresh` workflow of zeghostwriter/ZeroNet (MIT); see
+# NOTICE. The tools come from HELBOYCODER/simorgh-core (placeholder ref:
+# pin SIMORGH_CORE_REF to a release tag once simorgh-core publishes one).
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  # PLACEHOLDER: use simorgh-core's first release tag once it exists.
+  SIMORGH_CORE_REF: main
+  # PLACEHOLDER: Simorgh rebrand names; simorgh-core still builds the
+  # upstream `zero-discovery` / `zeronet-*` names today. See harvest.yml.
+  SIMORGH_CORE_PACKAGE: simorgh-discovery
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      found: ${{ steps.test.outputs.found }}
+    steps:
+      - uses: actions/checkout@v4
+      # Most runs reuse the binaries built for this commit's sources.
+      - id: bin
+        uses: actions/cache@v4
+        with:
+          path: bin
+          key: harvest-bin-${{ runner.os }}-${{ env.SIMORGH_CORE_REF }}-${{ hashFiles('.github/workflows/fresh.yml') }}
+      - if: steps.bin.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.bin.outputs.cache-hit != 'true'
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          key: crowd
+      - if: steps.bin.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$SIMORGH_CORE_REF" \
+            "https://github.com/HELBOYCODER/simorgh-core.git" simorgh-core
+          cargo build --release --manifest-path simorgh-core/Cargo.toml \
+            -p "$SIMORGH_CORE_PACKAGE" --bin simorgh-harvest --bin simorgh-sign
+          mkdir -p bin
+          cp simorgh-core/target/release/simorgh-harvest \
+            simorgh-core/target/release/simorgh-sign bin/
+      - name: test the priority channels
+        id: test
+        run: |
+          git fetch -q --depth 1 origin crowd-data || true
+          git show FETCH_HEAD:fresh.txt > old-fresh.txt 2>/dev/null || : > old-fresh.txt
+          git show FETCH_HEAD:fresh-state.json > fresh-state.json 2>/dev/null || echo '{}' > fresh-state.json
+          args=()
+          for name in $(jq -r '.priority[]' deploy/crowd/telegram-channels.json); do
+            args+=(--channel "$name")
+          done
+          if [ ${#args[@]} -eq 0 ]; then
+            echo "No priority channels; nothing to do."
+          elif bin/simorgh-harvest "${args[@]}" \
+              --telegram-state fresh-state.json --retest old-fresh.txt \
+              --out fresh.txt --want 300 --min 0 --minutes 5; then
+            echo "found=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not read the priority channels; the list stays as it is."
+          fi
+      - if: steps.test.outputs.found == 'yes'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh
+          path: |
+            fresh.txt
+            fresh-state.json
+            bin
+          retention-days: 1
+
+  publish:
+    needs: test
+    if: needs.test.outputs.found == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Shared with the harvest and crowd workflows: all replace the
+    # crowd-data commit.
+    concurrency:
+      group: crowd-data
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fresh
+          path: new
+      - name: put the fresh configs at the top
+        id: merge
+        run: |
+          chmod +x new/bin/*
+          # Read the branch itself: raw.githubusercontent.com caches for
+          # minutes, and the harvest may just have replaced the list.
+          git fetch -q --depth 1 origin crowd-data
+          git show FETCH_HEAD:verified.txt > current.txt 2>/dev/null || : > current.txt
+          git show FETCH_HEAD:fresh.txt > old-fresh.txt 2>/dev/null || : > old-fresh.txt
+          git show FETCH_HEAD:fresh-state.json > old-state.json 2>/dev/null || : > old-state.json
+          new/bin/simorgh-harvest merge --top new/fresh.txt --drop old-fresh.txt \
+            --rest current.txt --out verified.txt
+          cp new/fresh.txt new/fresh-state.json .
+          if cmp -s verified.txt current.txt && cmp -s fresh.txt old-fresh.txt \
+              && cmp -s fresh-state.json old-state.json; then
+            echo "Nothing changed."
+          else
+            echo "changed=yes" >> "$GITHUB_OUTPUT"
+          fi
+          echo "$(grep -c . fresh.txt || true) fresh configs at the top"
+      - name: sign the list
+        if: steps.merge.outputs.changed == 'yes'
+        env:
+          CROWD_SIGNING_KEY: ${{ secrets.CROWD_SIGNING_KEY }}
+        run: |
+          if [ -n "$CROWD_SIGNING_KEY" ]; then
+            new/bin/simorgh-sign sign verified.txt
+            new/bin/simorgh-sign verify verified.txt
+          else
+            echo "::warning::No CROWD_SIGNING_KEY; publishing verified.txt unsigned."
+          fi
+      - name: publish
+        if: steps.merge.outputs.changed == 'yes'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          files="verified.txt fresh.txt fresh-state.json"
+          [ -f verified.txt.sig ] && files="$files verified.txt.sig"
+          .github/scripts/publish-crowd-data.sh $files

@@ -1,0 +1,54 @@
+Simorgh — notice file
+====================
+
+This repository publishes server-discovery data for the Simorgh macOS app.
+
+It is a rebranded, independently maintained port of the server-discovery
+mechanism of zeghostwriter/ZeroNet (https://github.com/zeghostwriter/ZeroNet),
+which is distributed under the MIT License:
+
+    Copyright (c) zeghostwriter/ZeroNet contributors
+    Licensed under the MIT License.
+
+The CI workflows in .github/workflows/, the publish script in
+.github/scripts/, and the feed layouts in deploy/crowd/ are derived from that
+project's proven mechanism (harvest → test → sign → publish to a `crowd-data`
+branch), adapted to Simorgh branding, repository names, and tool names.
+
+The upstream project is licensed as follows (MIT License):
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+Full upstream text: https://github.com/zeghostwriter/ZeroNet
+
+The seed feeds listed in deploy/crowd/sources.json and
+deploy/crowd/harvest-sources.json point at third-party public v2ray config
+collections (v2rayNG-style subscription lists). Those lists are the works of
+their respective authors, are used here as generic public feeds, and carry no
+affiliation or endorsement on either side. Each repository is governed by its
+own license and terms.
+
+deploy/crowd/telegram-channels.json lists public Telegram channels that post
+free proxy configurations. Simorgh reads their public pages the same way a
+browser would; it does not host, verify, or endorse those channels.
+
+No server in this repository is operated by the Simorgh project. The project
+signs the published lists (see README.md) so apps can tell a genuine list from
+a substitute served by a CDN or a filtering network; the signing key is a
+repository secret and never lands in this repository.
