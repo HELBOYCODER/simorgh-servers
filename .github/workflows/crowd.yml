@@ -14,8 +14,8 @@ name: crowd
 # when a wrangler.toml is added. With neither, it does nothing.
 #
 # Derived from the `crowd` workflow of zeghostwriter/ZeroNet (MIT); see
-# NOTICE. The tools come from HELBOYCODER/simorgh-core (placeholder ref:
-# pin SIMORGH_CORE_REF to a release tag once simorgh-core publishes one).
+# NOTICE. The tools come from HELBOYCODER/simorgh-core at the ref pinned
+# in SIMORGH_CORE_REF.
 on:
   schedule:
     - cron: "*/20 * * * *"
@@ -32,11 +32,9 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  # PLACEHOLDER: use simorgh-core's first release tag once it exists.
-  SIMORGH_CORE_REF: main
-  # PLACEHOLDER: Simorgh rebrand names; simorgh-core still builds the
-  # upstream `zero-discovery` / `zeronet-*` names today. See harvest.yml.
-  SIMORGH_CORE_PACKAGE: simorgh-discovery
+  SIMORGH_CORE_REF: engine-v0.1.0
+  # package stays zero-discovery; Simorgh binary names landed in core
+  SIMORGH_CORE_PACKAGE: zero-discovery
 
 jobs:
   rank:

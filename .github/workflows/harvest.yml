@@ -37,18 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # PLACEHOLDER: simorgh-core does not publish a release tag yet, so the
-      # workflows build its `main` branch. Pin this to the first release tag
-      # (e.g. v0.1.0) once HELBOYCODER/simorgh-core tags one, and review the
-      # bump like any dependency change.
-      SIMORGH_CORE_REF: main
-      # PLACEHOLDER: names assume the Simorgh rebrand has landed in
-      # simorgh-core (package `simorgh-discovery`, binaries
-      # `simorgh-harvest` / `simorgh-sign`). Today simorgh-core still builds
-      # the upstream names (`zero-discovery`, `zeronet-harvest`,
-      # `zeronet-sign`); switch both sides when the rebrand ships, or flip
-      # these values if the Simorgh names change.
-      SIMORGH_CORE_PACKAGE: simorgh-discovery
+      SIMORGH_CORE_REF: engine-v0.1.0
+      # simorgh-core publishes the tools under package `zero-discovery`
+      # with Simorgh binary names (`simorgh-harvest` / `simorgh-sign`).
+      SIMORGH_CORE_PACKAGE: zero-discovery
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
