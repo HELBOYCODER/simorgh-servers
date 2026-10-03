@@ -70,7 +70,7 @@ jobs:
       # top; it tested them in the last ten minutes.
       - name: keep the fresh configs at the top
         run: |
-          git fetch -q --depth 1 origin crowd-data
+          git fetch -q --depth 1 origin crowd-data || true
           if git show FETCH_HEAD:fresh.txt > fresh.txt 2>/dev/null; then
             simorgh-core/target/release/simorgh-harvest merge --top fresh.txt \
               --rest verified.txt --out verified.txt

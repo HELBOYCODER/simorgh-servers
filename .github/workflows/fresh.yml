@@ -109,7 +109,7 @@ jobs:
           chmod +x new/bin/*
           # Read the branch itself: raw.githubusercontent.com caches for
           # minutes, and the harvest may just have replaced the list.
-          git fetch -q --depth 1 origin crowd-data
+          git fetch -q --depth 1 origin crowd-data || true
           git show FETCH_HEAD:verified.txt > current.txt 2>/dev/null || : > current.txt
           git show FETCH_HEAD:fresh.txt > old-fresh.txt 2>/dev/null || : > old-fresh.txt
           git show FETCH_HEAD:fresh-state.json > old-state.json 2>/dev/null || : > old-state.json
