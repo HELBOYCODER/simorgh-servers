@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SIMORGH_CORE_REF: engine-v0.1.0
+      SIMORGH_CORE_REF: engine-v0.1.1
       # simorgh-core publishes the tools under package `zero-discovery`
       # with Simorgh binary names (`simorgh-harvest` / `simorgh-sign`).
       SIMORGH_CORE_PACKAGE: zero-discovery
