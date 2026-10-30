@@ -37,11 +37,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SIMORGH_CORE_REF: engine-v0.1.1
+      SIMORGH_CORE_REF: engine-v0.1.2
       # simorgh-core publishes the tools under package `zero-discovery`
       # with Simorgh binary names (`simorgh-harvest` / `simorgh-sign`).
       SIMORGH_CORE_PACKAGE: zero-discovery
-    steps:
+    steps2
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
